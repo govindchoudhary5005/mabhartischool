@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MA BHARATI VIDHYA MANDIR KRISHNAGANJ (SIROHI) - डिजिटल स्कूल पोर्टल</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* ================= 1. बुनियादी सेटिंग्स ================= */
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f6f9; color: #333; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* ================= 2. हेडर एवं नेविगेशन ================= */
+        header { background-color: #1e3a8a; color: white; padding: 25px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        header h1 { font-size: 28px; letter-spacing: 0.5px; margin-bottom: 5px; }
+        header .address { font-size: 16px; opacity: 0.9; font-weight: 600; margin-bottom: 10px; }
+        .session-badge-container { background: rgba(255, 255, 255, 0.2); padding: 8px 15px; border-radius: 5px; display: inline-block; }
+        .session-select-header { padding: 4px 8px; font-size: 15px; font-weight: bold; border-radius: 4px; border: 2px solid #fff; background: #1e3a8a; color: white; cursor: pointer; }
+        
+        nav { background-color: #3b82f6; display: flex; justify-content: center; border-radius: 0 0 8px 8px; margin-bottom: 20px; overflow: hidden; }
+        nav button { background: none; border: none; color: white; padding: 14px 20px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; flex: 1; text-align: center; }
+        nav button:hover, nav button.active { background-color: #1d4ed8; }
+        
+        /* ================= 3. लेआउट एवं कार्ड्स ================= */
+        .page { display: none; }
+        .page.active-page { display: block; }
+        .grid { display: grid; grid-template-columns: 1fr 2.5fr; gap: 20px; }
+        @media (max-width: 950px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-bottom: 15px; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        /* ================= 4. फ़िल्टर्स और चैकबॉक्स ================= */
+        .filter-section { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr; gap: 15px; margin-bottom: 20px; background: #eff6ff; padding: 15px; border-radius: 6px; border: 1px solid #bfdbfe; align-items: flex-end; }
+        @media (max-width: 768px) { .filter-section { grid-template-columns: 1fr; } }
+        .search-box, .filter-select { border: 2px solid #3b82f6; font-size: 15px; }
+        .checkbox-item { display: flex; align-items: center; margin-bottom: 8px; }
+        .checkbox-item input { margin-right: 10px; width: 18px; height: 18px; cursor: pointer; }
+        
+        /* ================= 5. बटन्स ================= */
+        .btn-submit { background-color: #10b981; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        .btn-submit:hover { background-color: #059669; }
+        .btn-promote { background-color: #f59e0b; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
+        .btn-promote:hover { background-color: #d97706; }
+        .btn-print { background-color: #1e3a8a; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; height: 44px; }
+        .btn-delete { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; margin-left: 5px; }
+        .btn-edit { background-color: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-receipt { background-color: #8b5cf6; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        
+        /* ================= 6. टेबल्स एवं स्टेटस ================= */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #3b82f6; color: white; }
+        .fee-status-box { display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; width: fit-content; }
+        .fee-status-box.paid { background-color: #d1fae5; color: #065f46; }
+        .fee-status-box.pending { background-color: #fee2e2; color: #991b1b; }
+        .status.passed { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background-color: #e5e7eb; color: #374151; }
+        .history-alert { background-color: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; display: none; }
+        
+        /* ================= 7. रसीद एवं आईडी कार्ड (छिपे हुए) ================= */
+        #print-receipt-section { display: none; background: white; padding: 30px; border: 3px double #333; max-width: 600px; margin: 0 auto; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 16px; }
+        #print-idcard-section { display: none; width: 290px; height: 440px; border: 3px solid #1e3a8a; border-radius: 10px; margin: 0 auto; background: #fff; position: relative; text-align: center; }
+        .id-header { background: #1e3a8a; color: white; padding: 12px 5px; border-radius: 6px 6px 0 0; }
+        .id-header h3 { font-size: 15px; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .id-header p { font-size: 11px; opacity: 0.9; font-weight: bold; }
+        .id-title { font-size: 14px; font-weight: bold; color: #1e3a8a; margin: 10px 0; letter-spacing: 1px; text-decoration: underline; }
+        .id-photo-box { width: 95px; height: 115px; border: 2px dashed #999; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; background: #f9fafb; font-size: 11px; font-weight: bold; }
+        .id-details { text-align: left; padding: 0 18px; font-size: 13px; line-height: 1.8; color: #222; }
+        .id-details div { margin-bottom: 4px; }
+        .id-sign-panel { position: absolute; bottom: 42px; right: 20px; text-align: center; font-size: 12px; color: #333; }
+        .id-sign-line { width: 90px; border-top: 1px solid #333; margin-bottom: 3px; }
+        .id-director-label { font-weight: bold; letter-spacing: 0.5px; }
+        .id-footer { background: #3b82f6; color: white; font-size: 11px; font-weight: bold; padding: 8px 0; position: absolute; bottom: 0; width: 100%; border-radius: 0 0 6px 6px; }
+
+        @media print {
+            body { background-color: white; padding: 0; }
+            .container, nav, .print-hide { display: none !important; }
+            .print-active-area { display: block !important; }
+            #print-receipt-section.print-active-area { display: block !important; border: 2px solid #000; padding: 20px; }
+            #print-idcard-section.print-active-area { display: block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin-top: 60px; }
+            .fee-checkbox { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="print-receipt-section">
+    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+        <h2 style="font-size: 22px;">MA BHARATI VIDHYA MANDIR</h2>
+        <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">KRISHNAGANJ (SIROHI)</p>
+        <p style="font-size: 13px; opacity:0.8;">छात्र फीस भुगतान रसीद (Fee Receipt)</p>
+    </div>
+    <div class="receipt-row"><div><b>रसीद दिनांक:</b> <span id="rc-date"></span></div><div><b>सत्र:</b> <span id="rc-session"></span></div></div>
+    <div class="receipt-row" style="background:#f9fafb; padding:8px;"><div><b>स्कॉलर/रोल नंबर:</b> <span id="rc-roll"></span></div><div><b>कक्षा:</b> <span id="rc-class"></span></div></div>
+    <div class="receipt-row" style="padding:8px;"><div><b>विद्यार्थी का नाम:</b> <span id="rc-name"></span></div></div>
+    <table style="width: 100%; border: 1px solid #000; margin-top: 20px; text-align: center;">
+        <thead><tr style="background:#e5e7eb;"><th style="color:#000; background:none; text-align:center; border: 1px solid #000;">विवरण (किश्त नंबर)</th><th style="color:#000; background:none; text-align:center; border: 1px solid #000;">स्थिति (Status)</th></tr></thead>
+        <tbody>
+            <tr><td style="border: 1px solid #000; padding:10px;">प्रथम किश्त (1st Instalment)</td><td style="border: 1px solid #000; padding:10px;" id="rc-inst1"></td></tr>
+            <tr><td style="border: 1px solid #000; padding:10px;">द्वितीय किश्त (2nd Instalment)</td><td style="border: 1px solid #000; padding:10px;" id="rc-inst2"></td></tr>
+            <tr><td style="border: 1px solid #000; padding:10px;">तृतीय किश्त (3rd Instalment)</td><td style="border: 1px solid #000; padding:10px;" id="rc-inst3"></td></tr>
+        </tbody>
+    </table>
+    <div style="margin-top: 50px; text-align: right;"><p>_______________________</p><p style="margin-right: 20px; font-weight: bold;">हस्ताक्षर (DIRECTOR)</p></div>
+</div>
+
+<div id="print-idcard-section">
+    <div class="id-header"><h3>MA BHARATI VIDHYA MANDIR</h3><p>KRISHNAGANJ (SIROHI)</p></div>
+    <div class="id-title">STAFF IDENTITY CARD</div>
+    <div class="id-photo-box">यहाँ फोटो<br>चिपकाएँ</div>
+    <div class="id-details">
+        <div><b>नाम (Name):</b> <span id="id-card-name"></span></div>
+        <div><b>पद (Designation):</b> <span id="id-card-desg"></span></div>
+        <div><b>योग्यता (Qual.):</b> <span id="id-card-qual"></span></div>
+        <div><b>आईडी नंबर (ID No):</b> <span id="id-card-id"></span></div>
+        <div><b>मोबाइल (Mob.):</b> <span id="id-card-phone"></span></div>
+    </div>
+    <div class="id-sign-panel"><div class="id-sign-line"></div><div class="id-director-label">DIRECTOR</div></div>
+    <div class="id-footer">सत्र: <span id="id-card-session"></span></div>
+</div>
+
+<div class="container" id="mainContainer">
+    <header>
+        <h1>MA BHARATI VIDHYA MANDIR</h1>
+        <p class="address">KRISHNAGANJ (SIROHI)</p>
+        <div class="session-badge-container">
+            <label style="color:white; font-weight:bold;">📅 सत्र:</label>
+            <select id="currentSessionSelect" class="session-select-header" onchange="changeSession()">
+                <option value="2025-26">2025-26</option>
+                <option value="2026-27" selected>2026-27 (चालू)</option>
+                <option value="2027-28">2027-28</option>
+            </select>
+        </div>
+    </header>
+
+    <nav>
+        <button id="tab-home" class="active" onclick="switchPage('home')">🏠 Home</button>
+        <button id="tab-student" onclick="switchPage('student')">👥 Student मास्टर डेटा</button>
+        <button id="tab-fees" onclick="switchPage('fees')">💰 Fees रिकॉर्ड & रसीद</button>
+        <button id="tab-teachers" onclick="switchPage('teachers')">👩‍🏫 कार्मिक (Staff)</button>
+    </nav>
+
+    <div id="page-home" class="page active-page">
+        <div class="card"><h2>MA BHARATI VIDHYA MANDIR में आपका स्वागत है</h2><p style="margin-top:10px;">यह विद्यालय का मुख्य क्लाउड-आधारित डैशबोर्ड पोर्टल है। आपका पूरा स्कूल रिकॉर्ड यहाँ पूर्णतः सुरक्षित है।</p></div>
+    </div>
+
+    <div id="page-student" class="page">
+        <div class="grid">
+            <div>
+                <div class="card" id="entryCard">
+                    <h2 id="formHeading">नया Student जोड़ें</h2>
+                    <form id="studentForm">
+                        <input type="hidden" id="editOldRollNo">
+                        <div class="form-group"><label>स्टूडेंट का नाम:</label><input type="text" id="studentName" placeholder="नाम दर्ज करें"></div>
+                        <div class="form-group" id="rollNoGroup"><label>रोल नंबर / स्कॉलर नंबर:</label><input type="text" id="rollNo" placeholder="रोल नंबर दर्ज करें"></div>
+                        <div class="form-group"><label>कक्षा:</label><select id="studentClass"><script>for(let i=1; i<=12; i++) { document.write(`<option value="कक्षा ${i}">कक्षा ${i}</option>`); }</script></select></div>
+                        <button type="button" id="btnSaveSubmit" class="btn-submit" onclick="addStudent()">डेटा सुरक्षित करें</button>
+                        <button type="button" id="btnCancelEdit" class="btn-delete" style="display:none; width:100%; margin:10px 0 0 0;" onclick="cancelEditMode()">एडिट रद्द करें</button>
+                    </form>
+                </div>
+                <div class="card" id="promoteCard" style="border: 1px solid #f59e0b; background-color: #fffbeb;">
+                    <h2>🔄 क्लास प्रमोशन टैब</h2>
+                    <div class="form-group"><label>सत्र चुनें:</label><select id="targetSession"><option value="2026-27">2026-27</option><option value="2027-28">2027-28</option></select></div>
+                    <div class="form-group"><label>कक्षा चुनें:</label><select id="promoteClassSelect"><script>for(let i=1; i<=11; i++) { document.write(`<option value="कक्षा ${i}">कक्षा ${i} को ${i+1} में भेजें</option>`); }</script><option value="कक्षा 12">कक्षा 12 पास आउट</option></select></div>
+                    <button class="btn-promote" onclick="promoteClass()">🚀 प्रमोशन प्रोसेस करें</button>
+                </div>
+            </div>
+            <div class="card" id="studentReportCard">
+                <h2 id="studentViewHeading">छात्र मास्टर डेटाबेस (<span class="session-label">2026-27</span>)</h2>
+                <div id="historyViewAlert1" class="history-alert">⚠️ इतिहास डेटा मोड सक्रिय है। बदलाव वर्जित हैं।</div>
+                <div class="filter-section">
+                    <div><label>🏫 कक्षा:</label><select id="classFilter" class="filter-select" onchange="filterStudentTable()"><option value="all">सभी सक्रिय छात्र</option><script>for(let i=1; i<=12; i++) { document.write(`<option value="कक्षा ${i}">कक्षा ${i}</option>`); }</script><option value="Passed Out">Passed Out</option></select></div>
+                    <div><label>🔍 खोजें:</label><input type="text" id="searchBar" class="search-box" onkeyup="filterStudentTable()" placeholder="नाम / रोल नंबर..."></div>
+                    <div><button class="btn-print" onclick="printStudentMasterList()">📋 छात्र प्रपत्र सूची प्रिंट</button></div>
+                </div>
+                <div style="overflow-x: auto;"><table id="masterStudentTable"><thead><tr><th>रोल नंबर</th><th>नाम</th><th>कक्षा</th><th class="print-hide">एक्शन</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-fees" class="page">
+        <div class="card" id="feesReportCard">
+            <h2 id="feesHeading">छात्र फीस कलेक्शन चार्ट (<span class="session-label">2026-27</span>)</h2>
+            <div class="filter-section">
+                <div><label>🏫 कक्षा:</label><select id="feesClassFilter" class="filter-select" onchange="filterFeesTable()"><option value="all">सभी सक्रिय छात्र</option><script>for(let i=1; i<=12; i++) { document.write(`<option value="कक्षा ${i}">कक्षा ${i}</option>`); }</script></select></div>
+                <div><label>🔍 छात्र खोजें:</label><input type="text" id="feesSearchBar" class="search-box" onkeyup="filterFeesTable()" placeholder="नाम या रोल नंबर लिखें..."></div>
+                <div><button class="btn-print" onclick="printFeesChart()" style="background-color: #10b981;">💰 फीस चार्ट प्रिंट करें</button></div>
+            </div>
+            <div style="overflow-x: auto;"><table id="feesTable"><thead><tr><th>रोल नंबर</th><th>नाम</th><th>कक्षा</th><th>1st क़िस्त</th><th>2nd क़िस्त</th><th>3rd क़िस्त</th><th class="print-hide">एक्शन</th></tr></thead><tbody></tbody></table></div>
+        </div>
+    </div>
+
+    <div id="page-teachers" class="page">
+        <div class="grid">
+            <div class="card" id="teacherEntryCard">
+                <h2>नया शिक्षक जोड़ें</h2>
+                <form id="teacherForm" style="margin-top: 10px;">
+                    <div class="form-group"><label>शिक्षक का पूरा नाम:</label><input type="text" id="teacherName" placeholder="नाम दर्ज करें"></div>
+                    <div class="form-group"><label>पद (Designation):</label><input type="text" id="teacherDesg" placeholder="जैसे: वरिष्ठ अध्यापक, कंप्यूटर टीचर आदि"></div>
+                    <div class="form-group"><label>योग्यता (Qualification):</label><input type="text" id="teacherQual" placeholder="जैसे: MCA, B.Ed., M.A. आदि"></div>
+                    <div class="form-group"><label>स्टाफ / एम्प्लोयी ID:</label><input type="text" id="teacherId" placeholder="ID नंबर दर्ज करें"></div>
+                    <div class="form-group"><label>मोबाइल नंबर:</label><input type="text" id="teacherPhone" placeholder="मोबाइल नंबर दर्ज करें"></div>
+                    <button type="button" class="btn-submit" onclick="addTeacher()">शिक्षक डेटा सुरक्षित करें</button>
+                </form>
+            </div>
+            <div class="card" id="teacherReportCard">
+                <h2 id="teacherHeading">स्टाफ शिक्षक मास्टर लिस्ट</h2>
+                <div style="text-align:right; margin-bottom: 10px;" class="print-hide"><button class="btn-print" onclick="printTeacherList()" style="width: auto; padding: 10px 25px;">🖨️ पूरी स्टाफ लिस्ट प्रिंट करें</button></div>
+                <div style="overflow-x: auto;"><table id="teacherTable"><thead><tr><th>स्टाफ ID</th><th>नाम</th><th>पद</th><th>योग्यता</th><th class="print-hide">एक्शन</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🔒 आपकी असली और सत्यापित फ़ायरबेस सेटिंग्स यहाँ लॉक कर दी गई हैं:
+    const firebaseConfig = {
+        apiKey: "AIzaSyDjGb2hGKCYT-cq8xoW0w7aDp_fLV0kwr8",
+        authDomain: "ma-bharati-school.firebaseapp.com",
+        databaseURL: "https://ma-bharati-school-default-rtdb.firebaseio.com/",
+        projectId: "ma-bharati-school",
+        storageBucket: "ma-bharati-school.firebasestorage.app",
+        messagingSenderId: "1014186330376",
+        appId: "1:1014186330376:web:6c79127a40a7cbf1fc44bd",
+        measurementId: "G-L69BYG04M9"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let studentDatabase = []; let teacherDatabase = []; 
+    const classOrder = {}; for(let i=1; i<=11; i++) { classOrder[`कक्षा ${i}`] = `कक्षा ${i+1}`; } classOrder["कक्षा 12"] = "Passed Out";
+    let currentSession = "2026-27"; let isEditMode = false;
+
+    // रीयल-टाइम डेटाबेस लिसनर्स
+    db.ref("students").on("value", (snapshot) => {
+        studentDatabase = snapshot.val() ? Object.values(snapshot.val()) : [];
+        filterStudentTable(); filterFeesTable();
+    });
+
+    db.ref("teachers").on("value", (snapshot) => {
+        teacherDatabase = snapshot.val() ? Object.values(snapshot.val()) : [];
+        renderTeachers();
+    });
+
+    function saveToFirebase() { db.ref("students").set(studentDatabase); }
+    function saveTeachersToFirebase() { db.ref("teachers").set(teacherDatabase); }
+
+    // UI टैब लॉजिक
+    function switchPage(pageId) {
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active-page'));
+        document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`page-${pageId}`).classList.add('active-page');
+        document.getElementById(`tab-${pageId}`).classList.add('active');
+        cancelEditMode(); filterStudentTable(); filterFeesTable(); renderTeachers();
+    }
+
+    function changeSession() {
+        currentSession = document.getElementById("currentSessionSelect").value;
+        document.querySelectorAll(".session-label").forEach(el => el.innerText = currentSession);
+        const isReadOnly = currentSession !== "2026-27";
+        document.getElementById("historyViewAlert1").style.display = isReadOnly ? "block" : "none";
+        document.getElementById("entryCard").style.opacity = isReadOnly ? "0.5" : "1";
+        document.getElementById("promoteCard").style.opacity = isReadOnly ? "0.5" : "1";
+        document.getElementById("teacherEntryCard").style.opacity = isReadOnly ? "0.5" : "1";
+        cancelEditMode(); filterStudentTable(); filterFeesTable();
+    }
+
+    // छात्र मास्टर डेटा लिस्ट
+    function filterStudentTable() {
+        const cls = document.getElementById("classFilter").value;
+        const srh = document.getElementById("searchBar").value.toLowerCase();
+        const tbody = document.querySelector("#masterStudentTable tbody"); tbody.innerHTML = "";
+        studentDatabase.filter(s => s.session === currentSession && (cls === "all" ? s.class !== "Passed Out" : s.class === cls) && (s.name.toLowerCase().includes(srh) || s.rollNo.includes(srh))).forEach(s => {
+            const row = document.createElement("tr"); const isReadOnly = currentSession !== "2026-27";
+            row.innerHTML = `<td><b>${s.rollNo}</b></td><td>${s.name}</td><td>${s.class}</td><td class="print-hide"><button class="btn-edit" ${isReadOnly ? 'disabled':''} onclick="startEditStudent('${s.rollNo}')">✏️ एडिट</button><button class="btn-delete" ${isReadOnly ? 'disabled':''} onclick="deleteStudent('${s.rollNo}')">हटाएं</button></td>`;
+            tbody.appendChild(row);
+        });
+    }
+
+    // फीस ट्रैकिंग लिस्ट
+    function filterFeesTable() {
+        const cls = document.getElementById("feesClassFilter").value;
+        const srh = document.getElementById("feesSearchBar").value.toLowerCase();
+        const tbody = document.querySelector("#feesTable tbody"); tbody.innerHTML = "";
+        studentDatabase.filter(s => s.session === currentSession && (cls === "all" ? s.class !== "Passed Out" : s.class === cls) && (s.name.toLowerCase().includes(srh) || s.rollNo.includes(srh))).forEach(s => {
+            const row = document.createElement("tr"); const isPassed = s.class === "Passed Out"; const isReadOnly = currentSession !== "2026-27";
+            const disabledAttr = isReadOnly ? 'disabled' : '';
+            row.innerHTML = `<td><b>${s.rollNo}</b></td><td>${s.name}</td><td>${s.class}</td>
+                <td><div class="fee-status-box ${isPassed?'passed':(s.inst1?'paid':'pending')}"><input type="checkbox" class="fee-checkbox" ${disabledAttr} ${s.inst1?'checked':''} onchange="toggleFee('${s.rollNo}','inst1',this.checked)"><span>${isPassed?'-':(s.inst1?'जमा':'बाकी')}</span></div></td>
+                <td><div class="fee-status-box ${isPassed?'passed':(s.inst2?'paid':'pending')}"><input type="checkbox" class="fee-checkbox" ${disabledAttr} ${s.inst2?'checked':''} onchange="toggleFee('${s.rollNo}','inst2',this.checked)"><span>${isPassed?'-':(s.inst2?'जमा':'बाकी')}</span></div></td>
+                <td><div class="fee-status-box ${isPassed?'passed':(s.inst3?'paid':'pending')}"><input type="checkbox" class="fee-checkbox" ${disabledAttr} ${s.inst3?'checked':''} onchange="toggleFee('${s.rollNo}','inst3',this.checked)"><span>${isPassed?'-':(s.inst3?'जमा':'बाकी')}</span></div></td>
+                <td class="print-hide"><button class="btn-receipt" onclick="printSingleReceipt('${s.rollNo}')">रसीद 🖨️</button></td>`;
+            tbody.appendChild(row);
+        });
+    }
+
+    function toggleFee(r, k, v) {
+        if (currentSession !== "2026-27") return;
+        const idx = studentDatabase.findIndex(s => s.rollNo === r && s.session === currentSession);
+        if (idx !== -1) { studentDatabase[idx][k] = v; saveToFirebase(); }
+    }
+
+    function addStudent() {
+        if (currentSession !== "2026-27") return;
+        const n = document.getElementById("studentName").value; const r = document.getElementById("rollNo").value; const c = document.getElementById("studentClass").value;
+        if(!n || !r) { alert("सभी जानकारी भरें।"); return; }
+        if(isEditMode) {
+            const idx = studentDatabase.findIndex(s => s.rollNo === document.getElementById("editOldRollNo").value && s.session === currentSession);
+            if(idx !== -1) { studentDatabase[idx].name = n; studentDatabase[idx].class = c; alert("विवरण सुधारा गया!"); }
+            cancelEditMode();
+        } else {
+            if(studentDatabase.some(s => s.rollNo === r && s.session === currentSession)) { alert("रोल नंबर डुप्लीकेट है!"); return; }
+            studentDatabase.push({ session: currentSession, rollNo: r, name: n, class: c, inst1: false, inst2: false, inst3: false });
+        }
+        saveToFirebase(); changeSession();
+    }
+
+    function startEditStudent(r) {
+        const s = studentDatabase.find(x => x.rollNo === r && x.session === currentSession); if(!s) return;
+        isEditMode = true; document.getElementById("formHeading").innerText = "विवरण सुधारें (Edit)";
+        document.getElementById("studentName").value = s.name; document.getElementById("studentClass").value = s.class;
+        document.getElementById("rollNoGroup").style.display = "none"; document.getElementById("editOldRollNo").value = r;
+        document.getElementById("btnSaveSubmit").innerText = "अपडेट करें"; document.getElementById("btnCancelEdit").style.display = "block";
+    }
+
+    function cancelEditMode() {
+        isEditMode = false; document.getElementById("formHeading").innerHTML = 'नया Student जोड़ें';
+        document.getElementById("rollNoGroup").style.display = "block"; document.getElementById("btnSaveSubmit").innerText = "डेटा सुरक्षित करें";
+        document.getElementById("btnCancelEdit").style.display = "none"; document.getElementById("studentForm").reset();
+    }
+
+    function deleteStudent(r) {
+        if (currentSession !== "2026-27") return;
+        if(confirm("क्या आप छात्र को डिलीट करना चाहते हैं?")) {
+            studentDatabase = studentDatabase.filter(s => !(s.rollNo === r && s.session === currentSession)); saveToFirebase();
+        }
+    }
+
+    function promoteClass() {
+        if (currentSession !== "2026-27") return;
+        const f = document.getElementById("promoteClassSelect").value; const t = document.getElementById("targetSession").value;
+        if(t === currentSession) { alert("अगला सत्र चुनें!"); return; }
+        const eligible = studentDatabase.filter(s => s.class === f && s.session === currentSession);
+        if(eligible.length === 0) { alert("कोई छात्र नहीं मिले।"); return; }
+        if(confirm(`क्या आप ${f} के छात्रों को सत्र ${t} में भेजना चाहते हैं?`)) {
+            eligible.forEach(st => {
+                if(!studentDatabase.some(s => s.rollNo === st.rollNo && s.session === t)) {
+                    studentDatabase.push({ session: t, rollNo: st.rollNo, name: st.name, class: classOrder[f], inst1: false, inst2: false, inst3: false });
+                }
+            });
+            saveToFirebase(); document.getElementById("currentSessionSelect").value = t; changeSession();
+        }
+    }
+
+    // शिक्षक लॉजिक
+    function addTeacher() {
+        if (currentSession !== "2026-27") return;
+        const n = document.getElementById("teacherName").value; const id = document.getElementById("teacherId").value; const d = document.getElementById("teacherDesg").value; const q = document.getElementById("teacherQual").value; const p = document.getElementById("teacherPhone").value;
+        if(!n || !id || !d || !q || !p) { alert("सभी विवरण भरें।"); return; }
+        if(teacherDatabase.some(t => t.id === id)) { alert("यह ID पहले से दर्ज है!"); return; }
+        teacherDatabase.push({ id, name: n, desg: d, qual: q, phone: p }); saveTeachersToFirebase();
+        document.getElementById("teacherForm").reset();
+    }
+
+    function renderTeachers() {
+        const tbody = document.querySelector("#teacherTable tbody"); tbody.innerHTML = "";
+        teacherDatabase.forEach(t => {
+            const row = document.createElement("tr"); const isReadOnly = currentSession !== "2026-27";
+            row.innerHTML = `<td><b>${t.id}</b></td><td>${t.name}</td><td>${t.desg}</td><td>${t.qual}</td><td class="print-hide"><button class="btn-edit" onclick="printTeacherIDCard('${t.id}')">🪪 कार्ड</button><button class="btn-delete" ${isReadOnly ? 'disabled':''} onclick="deleteTeacher('${t.id}')">❌</button></td>`;
+            tbody.appendChild(row);
+        });
+    }
+
+    function deleteTeacher(id) {
+        if (currentSession !== "2026-27") return;
+        if(confirm("क्या आप शिक्षक का रिकॉर्ड हटाना चाहते हैं?")) { teacherDatabase = teacherDatabase.filter(t => t.id !== id); saveTeachersToFirebase(); }
+    }
+
+    // प्रिंट फंक्शन्स
+    function printSingleReceipt(r) {
+        const s = studentDatabase.find(x => x.rollNo === r && x.session === currentSession); if(!s) return;
+        document.getElementById("rc-date").innerText = new Date().toLocaleDateString('hi-IN');
+        document.getElementById("rc-session").innerText = currentSession; document.getElementById("rc-roll").innerText = s.rollNo;
+        document.getElementById("rc-class").innerText = s.class; document.getElementById("rc-name").innerText = s.name;
+        document.getElementById("rc-inst1").innerText = s.inst1 ? "✓ जमा" : "बाकी"; document.getElementById("rc-inst2").innerText = s.inst2 ? "✓ जमा" : "बाकी"; document.getElementById("rc-inst3").innerText = s.inst3 ? "✓ जमा" : "बाकी";
+        const rArea = document.getElementById("print-receipt-section"); rArea.classList.add("print-active-area"); window.print(); rArea.classList.remove("print-active-area");
+    }
+
+    function printTeacherIDCard(id) {
+        const t = teacherDatabase.find(x => x.id === id); if(!t) return;
+        document.getElementById("id-card-name").innerText = t.name; document.getElementById("id-card-desg").innerText = t.desg; document.getElementById("id-card-qual").innerText = t.qual; document.getElementById("id-card-id").innerText = t.id; document.getElementById("id-card-phone").innerText = t.phone; document.getElementById("id-card-session").innerText = currentSession;
+        const idCardArea = document.getElementById("print-idcard-section"); idCardArea.classList.add("print-active-area"); window.print(); idCardArea.classList.remove("print-active-area");
+    }
+
+    function printStudentMasterList() { document.getElementById("studentReportCard").classList.add("print-active-area"); window.print(); document.getElementById("studentReportCard").classList.remove("print-active-area"); }
+    function printFeesChart() { document.getElementById("feesReportCard").classList.add("print-active-area"); window.print(); document.getElementById("feesReportCard").classList.remove("print-active-area"); }
+    function printTeacherList() { document.getElementById("teacherReportCard").classList.add("print-active-area"); window.print(); document.getElementById("teacherReportCard").classList.remove("print-active-area"); }
+</script>
+</body>
+</html>
